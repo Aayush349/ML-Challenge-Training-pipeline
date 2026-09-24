@@ -93,13 +93,11 @@ def train_pipeline():
     print(f"Val candidate pairs: {len(X_val)} (Pos: {np.sum(y_val)})")
     
     # 5. Train LightGBM Model
-    pos_count = max(int(np.sum(y_train)), 1)
-    neg_count = len(y_train) - pos_count
-    scale_pos_weight = min(neg_count / pos_count, 10.0) # Modest scale to balance precision
-    
+    # We train on the natural class distribution without scale_pos_weight distortion,
+    # and use average_precision (PR-AUC) as early stopping metric to align with precision-heavy F0.5
     params = {
         'objective': 'binary',
-        'metric': 'binary_logloss',
+        'metric': 'average_precision',
         'boosting_type': 'gbdt',
         'num_leaves': 31,
         'learning_rate': 0.05,
@@ -107,7 +105,6 @@ def train_pipeline():
         'bagging_fraction': 0.85,
         'bagging_freq': 5,
         'min_child_samples': 20,
-        'scale_pos_weight': scale_pos_weight,
         'verbose': -1,
         'n_jobs': -1,
         'seed': RANDOM_STATE
@@ -116,7 +113,7 @@ def train_pipeline():
     lgb_train = lgb.Dataset(X_train, label=y_train)
     lgb_val = lgb.Dataset(X_val, label=y_val, reference=lgb_train)
     
-    print("\nTraining LightGBM Classifier...")
+    print("\nTraining LightGBM Classifier (Early stopping on PR-AUC)...")
     model = lgb.train(
         params,
         lgb_train,

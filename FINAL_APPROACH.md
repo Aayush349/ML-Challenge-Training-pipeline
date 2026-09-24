@@ -268,19 +268,19 @@ TOP_K_EMB = 25
 scores, indices = index.search(s1_embeddings.astype('float32'), TOP_K_EMB)
 ```
 
-### 4.4 Pass C: Country Hard Filter
+### 4.4 Pass C: Soft Country Prioritization (No Hard Exclusion)
 
-After retrieving candidates from Pass A and Pass B, **remove** any candidate whose `country_clean` does not match the S1 entity's `country_clean`. This is not hard-coding — it's a logical constraint (a business in India won't match one in the US).
-
-> [!NOTE]
-> This filter is applied as a **post-retrieval filter**, not a pre-index restriction. This way the FAISS index and TF-IDF index are built once on all S2∪S3 records, and the country filter just prunes the retrieved set.
+Rather than dropping candidates based on country string discrepancies (which risks permanently excluding matches due to blank or inconsistent labels like "USA" vs "US"), we apply **soft country prioritization**:
+- Candidates with matching or missing country labels receive a ranking bonus when sorting candidates.
+- High-similarity candidates (strong name and address match) can still make the top-K candidate list even if the country field is noisy or mismatched.
+- The model itself learns the exact importance of the `same_country` feature in Stage 4.
 
 ### 4.5 Candidate Union & Output
 
 ```python
 # For each S1 entity:
 # 1. Union of candidates from Pass A and Pass B
-# 2. Apply country filter
+# 2. Prioritize candidates by similarity score + soft same-country boost
 # 3. Cap at MAX_CANDIDATES = 50
 # 4. Write to candidate_pairs.tsv
 
@@ -347,11 +347,15 @@ For every candidate pair `(S1_entity, S2/S3_candidate)`, compute the following f
 
 | # | Feature | Notes |
 |---|---|---|
-| 21 | `same_country` | Binary: do countries match? (should always be 1 after blocking filter, but keep as safety) |
+| 21 | `same_country` | Binary: do countries match? |
 | 22 | `candidate_source` | Binary: is candidate from S2 (0) or S3 (1)? |
-| 23 | `blocking_rank_tfidf` | Rank in TF-IDF retrieval (lower = more similar) |
+| 23 | `blocking_rank_tfidf` | Rank in TF-IDF retrieval (lower = more similar, 999 = not found) |
 | 24 | `blocking_score_tfidf` | Raw cosine score from TF-IDF retrieval |
-| 25 | `blocking_rank_emb` | Rank in embedding retrieval |
+| 25 | `blocking_rank_emb` | Rank in embedding retrieval (999 = not found) |
+| 26 | `blocking_score_emb` | Cosine score from embedding retrieval |
+| 27 | `found_by_tfidf` | Binary flag: candidate was retrieved by Pass A |
+| 28 | `found_by_emb` | Binary flag: candidate was retrieved by Pass B |
+| 29 | `found_by_both` | Binary flag: candidate was retrieved by both passes |
 
 ### 5.5 Feature Engineering Code Skeleton
 
@@ -464,19 +468,19 @@ import lightgbm as lgb
 ```
 
 ### 6.3 Model Configuration
+We train on the natural class distribution without `scale_pos_weight` distortion, and use `average_precision` (PR-AUC) as early stopping metric to directly align with the precision-heavy $F_{0.5}$ target:
 
 ```python
 params = {
     'objective': 'binary',
-    'metric': 'binary_logloss',
+    'metric': 'average_precision',
     'boosting_type': 'gbdt',
-    'num_leaves': 63,
+    'num_leaves': 31,
     'learning_rate': 0.05,
-    'feature_fraction': 0.8,
-    'bagging_fraction': 0.8,
+    'feature_fraction': 0.85,
+    'bagging_fraction': 0.85,
     'bagging_freq': 5,
     'min_child_samples': 20,
-    'scale_pos_weight': neg_count / pos_count,  # handle class imbalance
     'verbose': -1,
     'n_jobs': -1,
     'seed': 42,

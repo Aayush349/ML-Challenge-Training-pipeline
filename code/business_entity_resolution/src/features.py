@@ -73,6 +73,11 @@ def compute_pair_features(
     feat['emb_score'] = float(emb_score)
     feat['emb_rank'] = float(emb_rank)
     
+    # Explicit single-pass and multi-pass indicators
+    feat['found_by_tfidf'] = float(1.0 if tfidf_rank < 999 else 0.0)
+    feat['found_by_emb'] = float(1.0 if emb_rank < 999 else 0.0)
+    feat['found_by_both'] = float(1.0 if (tfidf_rank < 999 and emb_rank < 999) else 0.0)
+    
     feat['same_country'] = float(1.0 if s1_row['country_clean'] == s2s3_row['country_clean'] else 0.0)
     feat['is_source3'] = float(1.0 if s2s3_row['entity_id'].startswith('S3-') else 0.0)
     

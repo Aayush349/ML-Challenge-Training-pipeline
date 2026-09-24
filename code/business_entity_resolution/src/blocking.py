@@ -91,15 +91,15 @@ class CandidateBlocker:
         
         emb_scores, emb_indices = faiss_index.search(s1_emb.astype(np.float32), self.top_k_emb)
         
-        # ----------------- PASS C: Candidate Fusion & Country Filter -----------------
-        print("Pass C: Merging candidates and applying country constraint...")
+        # ----------------- PASS C: Candidate Fusion & Soft Country Prioritization -----------------
+        print("Pass C: Merging candidates with soft country prioritization...")
         candidates_dict: Dict[str, List[Tuple[str, float, int, float, int]]] = {}
         
         for i in range(len(s1_ids)):
             s1_id = s1_ids[i]
             s1_c = s1_countries[i]
             
-            cand_info: Dict[str, Dict[str, float]] = {}
+            cand_info: Dict[str, Dict[str, any]] = {}
             
             # TF-IDF top-K
             row = tfidf_sim.getrow(i).toarray().flatten()
@@ -109,13 +109,14 @@ class CandidateBlocker:
                     score = float(row[idx])
                     if score > 0.05: # Minimal noise filter
                         cid = s2s3_ids[idx]
-                        if s2s3_countries[idx] == s1_c: # Country check
-                            cand_info[cid] = {
-                                'tfidf_score': score,
-                                'tfidf_rank': rank + 1,
-                                'emb_score': 0.0,
-                                'emb_rank': 999
-                            }
+                        c_match = (s2s3_countries[idx] == s1_c) or (not s1_c) or (not s2s3_countries[idx])
+                        cand_info[cid] = {
+                            'tfidf_score': score,
+                            'tfidf_rank': rank + 1,
+                            'emb_score': 0.0,
+                            'emb_rank': 999,
+                            'country_match': c_match
+                        }
             
             # Embedding top-K
             for rank in range(self.top_k_emb):
@@ -123,22 +124,24 @@ class CandidateBlocker:
                 score = float(emb_scores[i, rank])
                 if idx >= 0:
                     cid = s2s3_ids[idx]
-                    if s2s3_countries[idx] == s1_c: # Country check
-                        if cid in cand_info:
-                            cand_info[cid]['emb_score'] = score
-                            cand_info[cid]['emb_rank'] = rank + 1
-                        else:
-                            cand_info[cid] = {
-                                'tfidf_score': 0.0,
-                                'tfidf_rank': 999,
-                                'emb_score': score,
-                                'emb_rank': rank + 1
-                            }
+                    c_match = (s2s3_countries[idx] == s1_c) or (not s1_c) or (not s2s3_countries[idx])
+                    if cid in cand_info:
+                        cand_info[cid]['emb_score'] = score
+                        cand_info[cid]['emb_rank'] = rank + 1
+                    else:
+                        cand_info[cid] = {
+                            'tfidf_score': 0.0,
+                            'tfidf_rank': 999,
+                            'emb_score': score,
+                            'emb_rank': rank + 1,
+                            'country_match': c_match
+                        }
                             
-            # Sort by combined heuristic (emb_score + tfidf_score) and take top max_candidates
+            # Sort by soft score (similarity + same-country priority boost)
+            # High-similarity pairs make it even if country is noisy/mismatched
             sorted_cands = sorted(
                 cand_info.items(),
-                key=lambda x: (x[1]['emb_score'] + x[1]['tfidf_score']),
+                key=lambda x: ((x[1]['emb_score'] + x[1]['tfidf_score']) + (0.3 if x[1]['country_match'] else 0.0)),
                 reverse=True
             )[:self.max_candidates]
             
