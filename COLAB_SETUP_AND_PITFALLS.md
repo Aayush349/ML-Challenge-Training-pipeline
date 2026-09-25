@@ -13,25 +13,40 @@ This guide provides step-by-step instructions to run the **Business Entity Resol
 
 ---
 
-### Step 2: Upload Files or Mount Google Drive
-You can either upload the project folder directly to the Colab files pane or mount your Google Drive:
+### Step 2: Mount Google Drive & Extract Student Resource Data
 
 ```python
-# Cell 1: Mount Google Drive (Recommended for persistent storage)
+# Cell 1: Mount Drive and Unzip student_resource.zip
 from google.colab import drive
+import os
+
+# 1. Mount Google Drive
 drive.mount('/content/drive')
 
-# Set working directory to where you placed the project
-import os
-os.chdir('/content/drive/MyDrive/ML_challenge_AWS') # Change to your drive path
-!pwd
+# 2. Define the zip location in your Drive (assumes it is in your main 'My Drive')
+zip_path = '/content/drive/MyDrive/6ab10eb3b23ba_student_resource.zip'
+extract_path = '/content/student_resource'
+
+# 3. Unzip the file silently into Colab's fast local runtime
+if os.path.exists(zip_path):
+    print("Zip file found. Unzipping data... Please wait.")
+    !unzip -q {zip_path} -d {extract_path}
+    print(f"Done! Files extracted to: {extract_path}")
+    # Print directory contents to verify structure
+    !ls -l {extract_path}
+else:
+    print(f"❌ Error: Could not find the file at {zip_path}. Please check your Drive path.")
 ```
 
-*Alternatively, if uploading a zip directly into `/content/`:*
+Next, clone the ML pipeline repo and copy it into the runtime:
 ```python
-# Cell 1 (Alt): Unzip uploaded files directly in Colab
-!unzip -q project_data.zip -d /content/
+# Cell 2: Clone repository into runtime
 %cd /content/
+!git clone https://github.com/Aayush349/ML-Challenge-Training-pipeline.git
+!mkdir -p /content/student_resource/code
+!cp -r /content/ML-Challenge-Training-pipeline/code/business_entity_resolution /content/student_resource/code/
+!cp -r /content/ML-Challenge-Training-pipeline/utils /content/student_resource/ 2>/dev/null || true
+%cd /content/student_resource
 ```
 
 Ensure your directory structure in Colab looks like this:

@@ -5,13 +5,23 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent.parent
 
-# Dataset directories
-DATASET_DIR = PROJECT_ROOT / "dataset"
+# Dataset directories with dynamic fallback detection
+CWD_DATASET = Path.cwd() / "dataset"
+DEFAULT_DATASET = PROJECT_ROOT / "dataset"
+COLAB_DATASET = Path("/content/student_resource/dataset")
+
+if CWD_DATASET.exists():
+    DATASET_DIR = CWD_DATASET
+elif COLAB_DATASET.exists():
+    DATASET_DIR = COLAB_DATASET
+else:
+    DATASET_DIR = DEFAULT_DATASET
+
 TRAIN_DIR = DATASET_DIR / "train"
 TEST_DIR = DATASET_DIR / "test"
 
 # Output directory
-OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR = Path.cwd() / "output" if (Path.cwd() / "dataset").exists() else PROJECT_ROOT / "output"
 MODELS_DIR = BASE_DIR / "models"
 
 # Ensure output directories exist
