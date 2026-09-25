@@ -32,6 +32,10 @@ if os.path.exists(zip_path):
     print("Zip file found. Unzipping data... Please wait.")
     !unzip -q {zip_path} -d {extract_path}
     print(f"Done! Files extracted to: {extract_path}")
+    # Flatten if zip extracted into a nested student_resource subfolder
+    if os.path.exists('/content/student_resource/student_resource'):
+        !mv /content/student_resource/student_resource/* /content/student_resource/ 2>/dev/null || true
+        !rmdir /content/student_resource/student_resource 2>/dev/null || true
     # Print directory contents to verify structure
     !ls -l {extract_path}
 else:

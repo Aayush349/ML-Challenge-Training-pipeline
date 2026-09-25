@@ -6,17 +6,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = BASE_DIR.parent.parent
 
 # Dataset directories with dynamic fallback detection
-CWD_DATASET = Path.cwd() / "dataset"
-DEFAULT_DATASET = PROJECT_ROOT / "dataset"
-COLAB_DATASET = Path("/content/student_resource/dataset")
+DATASET_CANDIDATES = [
+    Path.cwd() / "dataset",
+    Path.cwd() / "student_resource" / "dataset",
+    Path("/content/student_resource/dataset"),
+    Path("/content/student_resource/student_resource/dataset"),
+    PROJECT_ROOT / "dataset",
+    PROJECT_ROOT / "student_resource" / "dataset",
+]
 
-if CWD_DATASET.exists():
-    DATASET_DIR = CWD_DATASET
-elif COLAB_DATASET.exists():
-    DATASET_DIR = COLAB_DATASET
-else:
-    DATASET_DIR = DEFAULT_DATASET
-
+DATASET_DIR = next((p for p in DATASET_CANDIDATES if p.exists()), PROJECT_ROOT / "dataset")
 TRAIN_DIR = DATASET_DIR / "train"
 TEST_DIR = DATASET_DIR / "test"
 
