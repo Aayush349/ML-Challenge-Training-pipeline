@@ -4,17 +4,30 @@ import pandas as pd
 import lightgbm as lgb
 from typing import Dict, List, Set, Tuple
 
-from .config import (
-    TEST_DIR,
-    OUTPUT_DIR,
-    MODELS_DIR,
-    MATCHING_RESULTS_PATH,
-    CANDIDATE_PAIRS_PATH,
-    DEFAULT_THRESHOLD
-)
-from .preprocess import preprocess_dataframe
-from .blocking import CandidateBlocker, export_candidate_pairs
-from .features import build_feature_matrix
+try:
+    from .config import (
+        TEST_DIR,
+        OUTPUT_DIR,
+        MODELS_DIR,
+        MATCHING_RESULTS_PATH,
+        CANDIDATE_PAIRS_PATH,
+        DEFAULT_THRESHOLD
+    )
+    from .preprocess import preprocess_dataframe
+    from .blocking import CandidateBlocker, export_candidate_pairs
+    from .features import build_feature_matrix
+except (ImportError, ValueError):
+    from config import (
+        TEST_DIR,
+        OUTPUT_DIR,
+        MODELS_DIR,
+        MATCHING_RESULTS_PATH,
+        CANDIDATE_PAIRS_PATH,
+        DEFAULT_THRESHOLD
+    )
+    from preprocess import preprocess_dataframe
+    from blocking import CandidateBlocker, export_candidate_pairs
+    from features import build_feature_matrix
 
 def load_test_data():
     """Load test sources."""

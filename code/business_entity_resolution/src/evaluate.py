@@ -1,6 +1,9 @@
 import numpy as np
 from typing import Dict, Set, List, Tuple
-from .config import THRESHOLD_START, THRESHOLD_END, THRESHOLD_STEP
+try:
+    from .config import THRESHOLD_START, THRESHOLD_END, THRESHOLD_STEP
+except (ImportError, ValueError):
+    from config import THRESHOLD_START, THRESHOLD_END, THRESHOLD_STEP
 
 def compute_macro_f05(
     predictions_dict: Dict[str, Set[str]], 

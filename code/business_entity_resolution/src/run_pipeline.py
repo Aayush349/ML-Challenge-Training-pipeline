@@ -3,10 +3,16 @@ import time
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+SRC_DIR = Path(__file__).resolve().parent
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from train import train_pipeline
-from inference import run_inference
+try:
+    from .train import train_pipeline
+    from .inference import run_inference
+except (ImportError, ValueError):
+    from train import train_pipeline
+    from inference import run_inference
 
 def main():
     print("=" * 60)

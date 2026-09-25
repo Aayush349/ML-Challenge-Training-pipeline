@@ -6,12 +6,20 @@ import faiss
 from sentence_transformers import SentenceTransformer
 import torch
 
-from .config import (
-    TOP_K_TFIDF,
-    TOP_K_EMB,
-    MAX_CANDIDATES_PER_ENTITY,
-    EMBEDDING_MODEL_NAME
-)
+try:
+    from .config import (
+        TOP_K_TFIDF,
+        TOP_K_EMB,
+        MAX_CANDIDATES_PER_ENTITY,
+        EMBEDDING_MODEL_NAME
+    )
+except (ImportError, ValueError):
+    from config import (
+        TOP_K_TFIDF,
+        TOP_K_EMB,
+        MAX_CANDIDATES_PER_ENTITY,
+        EMBEDDING_MODEL_NAME
+    )
 
 class CandidateBlocker:
     def __init__(self, top_k_tfidf: int = TOP_K_TFIDF, top_k_emb: int = TOP_K_EMB, max_candidates: int = MAX_CANDIDATES_PER_ENTITY):

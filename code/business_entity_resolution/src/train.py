@@ -5,18 +5,32 @@ import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 from typing import Dict, Set
 
-from .config import (
-    TRAIN_DIR,
-    MODELS_DIR,
-    RANDOM_STATE,
-    VAL_SIZE,
-    MAX_BOOST_ROUNDS,
-    EARLY_STOPPING_ROUNDS
-)
-from .preprocess import preprocess_dataframe
-from .blocking import CandidateBlocker
-from .features import build_feature_matrix
-from .evaluate import compute_macro_f05, optimize_threshold
+try:
+    from .config import (
+        TRAIN_DIR,
+        MODELS_DIR,
+        RANDOM_STATE,
+        VAL_SIZE,
+        MAX_BOOST_ROUNDS,
+        EARLY_STOPPING_ROUNDS
+    )
+    from .preprocess import preprocess_dataframe
+    from .blocking import CandidateBlocker
+    from .features import build_feature_matrix
+    from .evaluate import compute_macro_f05, optimize_threshold
+except (ImportError, ValueError):
+    from config import (
+        TRAIN_DIR,
+        MODELS_DIR,
+        RANDOM_STATE,
+        VAL_SIZE,
+        MAX_BOOST_ROUNDS,
+        EARLY_STOPPING_ROUNDS
+    )
+    from preprocess import preprocess_dataframe
+    from blocking import CandidateBlocker
+    from features import build_feature_matrix
+    from evaluate import compute_macro_f05, optimize_threshold
 
 def load_train_data():
     """Load training sources and ground truth."""
